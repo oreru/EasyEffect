@@ -1,9 +1,10 @@
 /*
+/*
 ==============================================================================
 
 BEGIN_JUCE_MODULE_DECLARATION
 
-   ID:            audio_plugin
+   ID:            easy_effect
    vendor:        WolfSound
    version:       0.1.0
    name:          Audio Plugin
@@ -25,3 +26,12 @@ END_JUCE_MODULE_DECLARATION
 #include "include/PluginEditor.h"
 
 // #include all additional header files below
+#include "include/EasyReverb.h"
+#include "include/dsp/common.h"
+#include "include/dsp/delay.h"
+#include "include/dsp/mix-matrix.h"
+#include "include/dsp/windows.h"
+#include "include/dsp/fft.h"
+#include "include/dsp/perf.h"
+
+

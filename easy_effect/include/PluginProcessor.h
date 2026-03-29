@@ -1,5 +1,7 @@
 #pragma once
 
+#include "EasyReverb.h"
+
 namespace easy_effect {
 class PluginProcessor : public juce::AudioProcessor {
 public:
@@ -39,5 +41,8 @@ public:
 private:
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginProcessor)
   juce::AudioProcessorValueTreeState apvts;
+
+  DiffusionStep<8> diffusion;
+  MultiChannelMixedFeedback<8> feedback;
 };
 }  // namespace audio_plugin

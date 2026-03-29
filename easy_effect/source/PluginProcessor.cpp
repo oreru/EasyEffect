@@ -93,6 +93,9 @@ void PluginProcessor::prepareToPlay(double sampleRate, int samplesPerBlock) {
   // Use this method as the place to do any pre-playback
   // initialisation that you need..
   juce::ignoreUnused(sampleRate, samplesPerBlock);
+
+  diffusion.configure(sampleRate);
+  feedback.configure(sampleRate);
 }
 
 void PluginProcessor::releaseResources() {
@@ -127,38 +130,63 @@ void PluginProcessor::processBlock(juce::AudioBuffer<float>& buffer,
                                    juce::MidiBuffer& midiMessages) {
   juce::ignoreUnused(midiMessages);
 
-  juce::ScopedNoDenormals noDenormals;
+  juce::ScopedNoDenormals noDenormals; 
+  const auto totalNumInputChannels = getTotalNumInputChannels();
   const auto totalNumOutputChannels = getTotalNumOutputChannels();
   const auto numSamples = buffer.getNumSamples();
+
+    // 清除输入以外的输出通道，防止产生垃圾噪音
+  for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+    buffer.clear(i, 0, numSamples);
+
+  if (totalNumInputChannels == 0)
+    return;
 
   // 读取 mix 参数（0.0 ~ 1.0）
   const float mix = apvts.getRawParameterValue("mix")->load();
 
-  // 测试正弦参数
-  constexpr double testFrequencyHz = 440.0;
-  constexpr float baseAmplitude = 0.2f;  // 防止太响
-  const double sr = getSampleRate();
+  auto* leftChannelData = buffer.getWritePointer(0);
+  // 防止单声道输入导致越界崩溃
+  auto* rightChannelData =
+      totalNumInputChannels > 1 ? buffer.getWritePointer(1) : nullptr;
 
-  // 简化测试：用 static 相位（后续可改成成员变量）
-  static double phase = 0.0;
-  const double phaseIncrement =
-      (sr > 0.0 ? (juce::MathConstants<double>::twoPi * testFrequencyHz / sr)
-                : 0.0);
+  for (int sampleIdx = 0; sampleIdx < numSamples; ++sampleIdx) {
+    // 读取原始干信号 (Dry)
+    float dryLeft = leftChannelData[sampleIdx];
+    float dryRight =
+        rightChannelData != nullptr ? rightChannelData[sampleIdx] : dryLeft;
 
-  // 直接生成输出，不使用输入音频
-  for (int sample = 0; sample < numSamples; ++sample) {
-    const float sineSample =
-        std::sin(phase) * baseAmplitude * mix;  // mix 当输出增益
+    // 1. Upmix: 将双声道干信号映射到 8 声道网格中
+    std::array<double, 8> channels{};
+    channels[0] = static_cast<double>(dryLeft);
+    channels[1] = static_cast<double>(dryRight);
+    // 为了使初始混响更饱满，可以将输入稍微分配给其他通道
+    channels[2] = channels[0] * 0.5;
+    channels[3] = channels[1] * 0.5;
 
-    phase += phaseIncrement;
-    if (phase >= juce::MathConstants<double>::twoPi) {
-      phase -= juce::MathConstants<double>::twoPi;
-    }
+    // 2. 处理: 通过你编写的 DSP 组件
+    channels = diffusion.process(channels);
+    channels = diffusion.process(channels);
+    channels = feedback.process(channels);
 
-    for (int channel = 0; channel < totalNumOutputChannels; ++channel) {
-      buffer.setSample(channel, sample, sineSample);
+    // 3. Downmix: 将 8 声道湿信号 (Wet) 混缩回双声道
+    // (乘以 0.5 是为了稍微衰减防爆音，你可以根据情况调整)
+    double wetLeft =
+        (channels[0] + channels[2] + channels[4] + channels[6]) * 0.5;
+    double wetRight =
+        (channels[1] + channels[3] + channels[5] + channels[7]) * 0.5;
+
+    // 4. 干湿混合 (Dry / Wet Mix): 线性插值
+    leftChannelData[sampleIdx] =
+        static_cast<float>(dryLeft * (1.0f - mix) + wetLeft * mix);
+
+    if (rightChannelData != nullptr) {
+      rightChannelData[sampleIdx] =
+          static_cast<float>(dryRight * (1.0f - mix) + wetRight * mix);
     }
   }
+
+  
 }
 
 bool PluginProcessor::hasEditor() const {
