@@ -15,7 +15,7 @@ inline double randomInRange(double low, double high) {
 template <int channels = 8>
 struct MultiChannelMixedFeedback {
   using Array = std::array<double, channels>;
-  double delayMs = 80;
+  double delayMs = 50;
   double decayGain = 0.85;
 
   std::array<int, channels> delaySamples;
@@ -53,7 +53,7 @@ struct MultiChannelMixedFeedback {
 template <int channels = 8>
 struct DiffusionStep {
   using Array = std::array<double, channels>;
-  double delayMsRange = 50;
+  double delayMsRange = 20;
 
   std::array<int, channels> delaySamples;
   std::array<Delay, channels> delays;

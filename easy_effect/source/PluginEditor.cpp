@@ -13,7 +13,32 @@ PluginEditor::PluginEditor(PluginProcessor& p)
   mixAttachment = std::make_unique<SliderAttachment>(processorRef.getAPVTS(),
                                                      "mix", mixSlider);
 
-  setSize(420, 260);
+  diffusionSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+  diffusionSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 70, 20);
+  diffusionSlider.setTextValueSuffix(" ms");
+  addAndMakeVisible(diffusionSlider);
+
+  diffusionLabel.setText("Diffusion", juce::dontSendNotification);
+  diffusionLabel.setJustificationType(juce::Justification::centred);
+  addAndMakeVisible(diffusionLabel);
+
+  diffusionAttachment = std::make_unique<SliderAttachment>(
+      processorRef.getAPVTS(), "diffusion", diffusionSlider);
+
+  decaySlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+  decaySlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 70, 20);
+  decaySlider.setTextValueSuffix(" %");
+  addAndMakeVisible(decaySlider);
+
+  decayLabel.setText("Decay", juce::dontSendNotification);
+  decayLabel.setJustificationType(juce::Justification::centred);
+  addAndMakeVisible(decayLabel);
+
+  decayAttachment =
+      std::make_unique<SliderAttachment>(processorRef.getAPVTS(), "decay",
+                                         decaySlider);
+
+  setSize(560, 260);
 }
 
 void PluginEditor::paint(juce::Graphics& g) {
@@ -24,7 +49,7 @@ void PluginEditor::paint(juce::Graphics& g) {
 
   g.setColour(juce::Colours::white);
   g.setFont(15.0f);
-  g.drawFittedText("EasyEffect - Reverb (GUI/Parameter Stage)",
+  g.drawFittedText("Reverb that sounds like shit",
                    getLocalBounds().removeFromTop(30),
                    juce::Justification::centred, 1);
 }
@@ -35,8 +60,19 @@ void PluginEditor::resized() {
   auto area = getLocalBounds().reduced(20);
   area.removeFromTop(30);
 
-  auto knobArea = area.withSizeKeepingCentre(160, 180);
-  mixLabel.setBounds(knobArea.removeFromTop(24));
-  mixSlider.setBounds(knobArea);
+  auto knobArea = area.withSizeKeepingCentre(420, 180);
+  auto columnWidth = knobArea.getWidth() / 3;
+
+  auto mixArea = knobArea.removeFromLeft(columnWidth);
+  mixLabel.setBounds(mixArea.removeFromTop(24));
+  mixSlider.setBounds(mixArea);
+
+  auto diffusionArea = knobArea.removeFromLeft(columnWidth);
+  diffusionLabel.setBounds(diffusionArea.removeFromTop(24));
+  diffusionSlider.setBounds(diffusionArea);
+
+  auto decayArea = knobArea;
+  decayLabel.setBounds(decayArea.removeFromTop(24));
+  decaySlider.setBounds(decayArea);
 }
 }  // namespace audio_plugin

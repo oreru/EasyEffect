@@ -44,5 +44,8 @@ private:
 
   DiffusionStep<8> diffusion;
   MultiChannelMixedFeedback<8> feedback;
+  double currentSampleRate = 44100.0;
+  float lastDiffusionMsRange = -1.0f;
+  float lastDecayGain = -1.0f;
 };
 }  // namespace audio_plugin

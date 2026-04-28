@@ -18,6 +18,14 @@ private:
   juce::Label mixLabel;
   std::unique_ptr<SliderAttachment> mixAttachment;
 
+  juce::Slider diffusionSlider;
+  juce::Label diffusionLabel;
+  std::unique_ptr<SliderAttachment> diffusionAttachment;
+
+  juce::Slider decaySlider;
+  juce::Label decayLabel;
+  std::unique_ptr<SliderAttachment> decayAttachment;
+
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginEditor)
 };
 }  // namespace audio_plugin
